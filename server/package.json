@@ -1,0 +1,8 @@
+{
+  "name": "isdpoll-server",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "ws": "^8.12.0"
+  }
+}
