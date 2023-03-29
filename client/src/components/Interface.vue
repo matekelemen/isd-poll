@@ -172,7 +172,6 @@
         padding: 10px;
         margin: 10px 10px 10px;
         display:block;
-        overflow:scroll;
     }
 
     .selectableLabel:hover {
