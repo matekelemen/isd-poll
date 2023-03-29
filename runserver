@@ -1,0 +1,12 @@
+#!/bin/bash
+
+scriptDir="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+cd "$scriptDir/server"
+npm install
+node main.js &
+
+cd "$scriptDir/client"
+npm install
+npm run build
+cd dist
+python -m http.server 8080
