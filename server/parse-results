@@ -1,0 +1,67 @@
+#!/bin/env python3
+
+# --- STD Imports ---
+import pathlib
+import re
+import json
+
+
+entryPattern = re.compile(R"([a-f0-9:\.]+): User response: ([0-9,]+)")
+intPattern = re.compile(R"([0-9]+)(?:,|$)")
+
+scriptPath = pathlib.Path(__file__).absolute().parent
+inputConfigPath = scriptPath / "isd-poll-config.json"
+outputPath = scriptPath / "isd-poll.log"
+
+# Parse the output file
+pollResults: "dict[str,list[int]]" = {} # <== selected indices associated to IP addresses
+try:
+    with open(outputPath, "r") as file:
+        for line in file.readlines():
+            line = line.strip()
+            match = entryPattern.match(line)
+            if match:
+                address = match.group(1)
+                selection: "list[int]"
+                try:
+                    selection = [int(m) for m in intPattern.findall(match.group(2))]
+                except Exception as exception:
+                    print(f"Invalid entry in {outputPath}: {line}")
+                    exit(1)
+                pollResults[address] = selection
+            else:
+                print(f"Invalid entry in {outputPath}: {line}")
+                exit(1)
+except FileNotFoundError as exception:
+    print(f"No poll results found at {outputPath}")
+    exit(1)
+
+# Read the input config
+config: dict
+try:
+    with open(inputConfigPath, "r") as file:
+        config = json.load(file)
+except FileNotFoundError as exception:
+    print(f"No poll config found at {inputConfigPath}")
+    exit(1)
+
+# Aggregate results
+aggregateResults = dict((i_option, {"name" : option, "votes" : 0}) for i_option, option in enumerate(config["options"]))
+for selection in pollResults.values():
+    for i in selection:
+        aggregateResults[i]["votes"] += 1
+
+# Output props
+maxOptionLength = max(len(option) for option in config["options"])
+header = f"|  # | {'Option'.center(maxOptionLength)} | Votes |"
+separator = "+".join("-" * len(title) for title in header.split("|"))
+
+# Tabular pretty print
+print(separator)
+print(header)
+print(separator)
+for i_position, entry in enumerate(sorted(aggregateResults.values(), key = lambda entry: -entry["votes"])):
+    print(f"|{str(i_position).rjust(len(header.split('|')[1])-1)} | {entry['name'].center(maxOptionLength)} | {str(entry['votes']).center(len(header.split('|')[-2])-1)}|")
+print(separator)
+
+exit(0)
